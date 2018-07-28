@@ -25,6 +25,7 @@ ESP8266WebServer webServer(80);
 
 //Definitons
 #define RELAY 2
+#define INDICATOR 0
 String   LINK_SSID;
 String   LINK_PASSWORD;
 const char*   ID = "S0001";
@@ -50,10 +51,14 @@ void setup()
 {
   Serial.begin(115200);
   pinMode(RELAY, OUTPUT);
+  pinMode(INDICATOR, OUTPUT);
 
   //initialize the state of the shock as ON
   state = ON;
-  digitalWrite(RELAY, ON);
+  digitalWrite(RELAY, state);
+
+  //initialize idicator as not connected to the link
+  digitalWrite(INDICATOR, HIGH);
 
   //for smart config
   EEPROM.begin(512);
@@ -83,7 +88,6 @@ void loop()
         out = convert_to_json(ID, value);
         response = send_data(out);
         Serial.println(response);
-        Serial.println(String(response==ON));
   
         switch(state)
         {
@@ -152,7 +156,8 @@ SHOCK_STATE_t send_data(String out)
   Serial.println(out);
   if(!shock.connected())
   {
-    connect_to_link();
+    digitalWrite(INDICATOR, HIGH); //indicate as disconnected
+    checkConnection();
   }
   shock.println(out);
   //Serial.println(shock.readStringUntil('\n'));
@@ -160,10 +165,6 @@ SHOCK_STATE_t send_data(String out)
   //Serial.println(resp);
   return resp;
 }
-
-
-
-
 
 
 
@@ -193,30 +194,6 @@ boolean restoreConfig() {
 }
 
 
-
-/* @brief
- * check the connectivity with the link
- *  
- * @param
- * None
- * 
- * @return
- * NONE
- */
-void check_connectivity()
-{
-  while(WiFi.status() != WL_CONNECTED)
-  {
-    for(int i=0; i < 10; i++)
-    {
-      Serial.print(".");
-    }
-    Serial.println("");
-    delay(1000);
-  }
-}
-
-
 /* @brief
  * check the connectivity with the link
  *  
@@ -231,16 +208,22 @@ void connect_to_link()
   shock.stop();
   if(shock.connect(link, 9001))
   {
+    digitalWrite(INDICATOR, LOW);
     Serial.println("<CONNECTED>");
     //shock.println ("<CONNECTED>");
   }
 }
 
 
-
-
-
-
+/* @brief
+ * check the connectivity with the link
+ *  
+ * @param
+ * None
+ * 
+ * @return
+ * NONE
+ */
 
 boolean checkConnection() {
   int count = 0;
@@ -358,7 +341,7 @@ void setupMode() {
 }
 
 String makePage(String title, String contents) {
-  String s = "<\!DOCTYPE html><html><head>";
+  String s = "<!DOCTYPE html><html><head>";
   s += "<meta name=\"viewport\" content=\"width=device-width,user-scalable=0\">";
   s += "<title>";
   s += title;
