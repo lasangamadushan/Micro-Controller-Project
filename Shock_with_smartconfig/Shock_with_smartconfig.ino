@@ -263,7 +263,7 @@ void startWebServer() {
       String s = first_half;
       s += ssidList;
       s += second_half;
-      webServer.send(200, "text/html", makePage("Wi-Fi Settings", s));
+      makePage("Wi-Fi Settings", s);
     });
     webServer.on("/setap", []() {
       for (int i = 0; i < 96; ++i) {
@@ -288,12 +288,12 @@ void startWebServer() {
       String s = "<h1>Setup complete.</h1><p>device will be connected to \"";
       s += ssid;
       s += "\" after the restart.";
-      webServer.send(200, "text/html", makePage("Wi-Fi Settings", s));
+      makePage("Wi-Fi Settings", s);
       ESP.restart();
     });
     webServer.onNotFound([]() {
       String s = "<h1>AP mode</h1><p><a href=\"/settings\">Wi-Fi Settings</a></p>";
-      webServer.send(200, "text/html", makePage("AP mode", s));
+      makePage("AP mode", s);
     });
   }
   else {
@@ -301,7 +301,7 @@ void startWebServer() {
     Serial.println(WiFi.localIP());
     webServer.on("/", []() {
       String s = "<h1>STA mode</h1><p><a href=\"/reset\">Reset Wi-Fi Settings</a></p>";
-      webServer.send(200, "text/html", makePage("STA mode", s));
+      makePage("STA mode", s);
     });
     webServer.on("/reset", []() {
       for (int i = 0; i < 96; ++i) {
@@ -309,7 +309,7 @@ void startWebServer() {
       }
       EEPROM.commit();
       String s = "<h1>Wi-Fi settings was reset.</h1><p>Please reset device.</p>";
-      webServer.send(200, "text/html", makePage("Reset Wi-Fi Settings", s));
+      makePage("Reset Wi-Fi Settings", s);
     });
   }
   webServer.begin();
@@ -340,19 +340,23 @@ void setupMode() {
   Serial.println("\"");
 }
 
-String makePage(String title, String contents) {
-  String s = "<!DOCTYPE html><html><head>";
-  s += "<meta name=\"viewport\" content=\"width=device-width,user-scalable=0\">";
-  s += "<title>";
-  s += title;
-  s += "</title>";
-  s += maincss;
-  s += utilcss;
-  s += css;
-  s += "</head><body>";
-  s += contents;
-  s += "</body></html>";
-  return s;
+void makePage(String title, String contents) {
+  String s1 = "<!DOCTYPE html><html><head>";
+  s1 += "<meta name=\"viewport\" content=\"width=device-width,user-scalable=0\">";
+  s1 += "<title>";
+  s1 += title;
+  s1 += "</title>";
+  String s2 = maincss;
+  s2 += utilcss;
+  String s3 = css;
+  s3 += "</head><body>";
+  String s4 = contents;
+  s4 = "</body></html>";
+  webServer.setContentLength(s1.length()+s2.length()+s3.length()+s4.length());
+  webServer.send(200, "text/html", s1);
+  webServer.sendContent(s2);
+  webServer.sendContent(s3);
+  webServer.sendContent(s4);
 }
 
 String urlDecode(String input) {
